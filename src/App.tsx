@@ -16,11 +16,13 @@ function ImagesContainer(props: ImagesContainerProps) {
 
   const { title, imgNum } = props;
 
+  const loadedImg = useRef(0);
+
+  const imgsCount = IMG_COUNT_MAP[title];
   const imgComponents = useMemo(() => {
-    const count = IMG_COUNT_MAP[title];
 
     const arr = [];
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < imgsCount; i++) {
       arr.push(<div
         style={{
           backgroundImage: `url(${getImagePath(title, i + 1)})`,
@@ -38,6 +40,7 @@ function ImagesContainer(props: ImagesContainerProps) {
     }
     return arr;
   }, [title, imgNum]);
+
   return (
     <div style={{
       width: '100%',
