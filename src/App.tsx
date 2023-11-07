@@ -23,7 +23,20 @@ function ImagesContainer(props: ImagesContainerProps) {
 
     const arr = [];
     for (let i = 0; i < imgsCount; i++) {
-      arr.push(<div
+
+      const img = new Image();
+      img.src = getImagePath(title, i + 1).toString();
+      img.onload = () => {
+        loadedImg.current++;
+
+        console.log(loadedImg);
+        if (loadedImg.current === imgsCount) {
+          document.title = 'loaded!';
+        } else {
+          document.title = 'loading';
+        }
+      }
+      const ele = (<div
         style={{
           backgroundImage: `url(${getImagePath(title, i + 1)})`,
           height: '100%',
@@ -37,7 +50,9 @@ function ImagesContainer(props: ImagesContainerProps) {
         }}
       >
       </div >)
-    }
+      arr.push(ele)
+    };
+
     return arr;
   }, [title, imgNum]);
 
@@ -94,7 +109,7 @@ function Component(props: ComponentProps) {
 
 
   const imgsCount = IMG_COUNT_MAP[title];
-  const heightPercent = PERCENT_OF_IMG * imgsCount+100;
+  const heightPercent = PERCENT_OF_IMG * imgsCount + 100;
   console.log(imgsCount, heightPercent)
 
 
