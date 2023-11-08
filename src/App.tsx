@@ -106,13 +106,17 @@ function Component(props: ComponentProps) {
   }, [parentRef, scrollContainerRef])
 
 
+  function clamp(x: number) {
+    return Math.min(imgsCount - 1, Math.max(0, x));
+  }
+
   useEffect(() => {
     function handler(e: Event) {
       const ele = e.target as HTMLDivElement;
 
       const percent = ele.scrollTop / ele.clientHeight;
       console.log(percent);
-      setImgNum(Math.min(imgsCount - 1, Math.floor(percent * 100 / PERCENT_OF_IMG)));
+      setImgNum(clamp(Math.floor( percent * 100 / PERCENT_OF_IMG )));
     }
     scrollContainerRef.current.addEventListener('scroll', handler)
     return () => scrollContainerRef.current.removeEventListener('scroll', handler);
