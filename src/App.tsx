@@ -5,7 +5,7 @@ type Title = 'body' | 'lung1' | 'lung2' | 'coronal' | 'saggital';
 const IMG_COUNT_MAP: Record<Title, number> =
   { 'body': 73, 'lung1': 34, 'lung2': 66, 'coronal': 40, 'saggital': 63 };
 
-const PERCENT_OF_IMG = 5;  // 5% for an image
+const PERCENT_OF_IMG = 10;  // 5% for an image
 
 
 type ImagesContainerProps = {
@@ -18,25 +18,37 @@ function ImagesContainer(props: ImagesContainerProps) {
 
   const loadedImg = useRef(0);
 
-  const imgsCount = IMG_COUNT_MAP[title];
-  const imgComponents = useMemo(() => {
 
-    const arr = [];
+  useEffect(() => {
+
+    const fns: Function[] = [];
     for (let i = 0; i < imgsCount; i++) {
-
       const img = new Image();
       img.src = getImagePath(title, i + 1).toString();
-      img.onload = () => {
+      const onload = () => {
         loadedImg.current++;
+        console.log(loadedImg.current);
 
-        console.log(loadedImg);
         if (loadedImg.current === imgsCount) {
           document.title = 'loaded!';
         } else {
           document.title = 'loading';
         }
       }
+      img.addEventListener('load', onload);
+      fns.push(() => img.removeEventListener('load', onload));
+    }
+
+    return () => { fns.forEach(fn => fn()); }
+  }, [title]);
+
+  const imgsCount = IMG_COUNT_MAP[title];
+  const imgComponents = useMemo(() => {
+
+    const arr = [];
+    for (let i = 0; i < imgsCount; i++) {
       const ele = (<div
+        key={`${title}-${i}`}
         style={{
           backgroundImage: `url(${getImagePath(title, i + 1)})`,
           height: '100%',
@@ -96,12 +108,11 @@ function Component(props: ComponentProps) {
 
   useEffect(() => {
     function handler(e: Event) {
-      console.log("handle")
       const ele = e.target as HTMLDivElement;
 
       const percent = ele.scrollTop / ele.clientHeight;
       console.log(percent);
-      setImgNum(Math.floor(percent * 100 / PERCENT_OF_IMG));
+      setImgNum(Math.min(imgsCount - 1, Math.floor(percent * 100 / PERCENT_OF_IMG)));
     }
     scrollContainerRef.current.addEventListener('scroll', handler)
     return () => scrollContainerRef.current.removeEventListener('scroll', handler);
@@ -110,8 +121,6 @@ function Component(props: ComponentProps) {
 
   const imgsCount = IMG_COUNT_MAP[title];
   const heightPercent = PERCENT_OF_IMG * imgsCount + 100;
-  console.log(imgsCount, heightPercent)
-
 
   return (
     <div ref={parentRef} style={{ overflow: 'hidden' }}>
@@ -137,7 +146,7 @@ function Component(props: ComponentProps) {
   )
 }
 
-function getImagePath(title: string, num: number) {
+function getImagePath(title: Title, num: number) {
   return new URL(`./images/${title}/img${num}.jpg`, import.meta.url);
 }
 
