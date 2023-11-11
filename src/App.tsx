@@ -1,42 +1,42 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import useValidate from './useValidate';
 
 
 type Title = 'body' | 'lung1' | 'lung2' | 'coronal' | 'saggital';
 const IMG_COUNT_MAP: Record<Title, number> =
   { 'body': 73, 'lung1': 34, 'lung2': 66, 'coronal': 40, 'saggital': 63 };
 
-const PERCENT_OF_IMG = 10;  // 5% for an image
+const scrollRate = 10;  // 5% for an image
 
 
 type ImagesContainerProps = {
   title: Title,
   imgNum: number,
+
+  setLoading: React.Dispatch<React.SetStateAction<boolean>>,
 }
 function ImagesContainer(props: ImagesContainerProps) {
 
-  const { title, imgNum } = props;
+  const { title, imgNum, setLoading } = props;
 
   const loadedImg = useRef(0);
-
 
   useEffect(() => {
 
     const fns: Function[] = [];
     for (let i = 0; i < imgsCount; i++) {
       const img = new Image();
+
       img.src = getImagePath(title, i + 1).toString();
       const onload = () => {
         loadedImg.current++;
-        console.log(loadedImg.current);
+        // console.log(loadedImg.current);
 
-        if (loadedImg.current === imgsCount) {
-          document.title = 'loaded!';
-        } else {
-          document.title = 'loading';
-        }
+        setLoading(loadedImg.current < imgsCount);
       }
       img.addEventListener('load', onload);
       fns.push(() => img.removeEventListener('load', onload));
+
     }
 
     return () => { fns.forEach(fn => fn()); }
@@ -99,7 +99,8 @@ function Component(props: ComponentProps) {
       scrollContainerRef.current.style.transform = `translate(${diff}px, 0)`;
       parentRef.current.style.transform = `translate(-${diff / 2}px, 0)`;
     }
-    hideScrollBar();
+    if (scrollContainerRef.current)
+      hideScrollBar();
 
     document.addEventListener('resize', hideScrollBar)
     return () => document.removeEventListener('resize', hideScrollBar)
@@ -116,19 +117,24 @@ function Component(props: ComponentProps) {
 
       const percent = ele.scrollTop / ele.clientHeight;
       console.log(percent);
-      setImgNum(clamp(Math.floor( percent * 100 / PERCENT_OF_IMG )));
+      setImgNum(clamp(Math.floor(percent * 100 / scrollRate)));
     }
-    scrollContainerRef.current.addEventListener('scroll', handler)
-    return () => scrollContainerRef.current.removeEventListener('scroll', handler);
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.addEventListener('scroll', handler)
+      return () => { if (scrollContainerRef.current) scrollContainerRef.current.removeEventListener('scroll', handler); }
+    }
   }, [])
 
 
   const imgsCount = IMG_COUNT_MAP[title];
-  const heightPercent = PERCENT_OF_IMG * imgsCount + 100;
+  const heightPercent = scrollRate * imgsCount + 100;
+
+  const [loading, setLoading] = useState(true);
+
 
   return (
     <div ref={parentRef} style={{ overflow: 'hidden' }}>
-      <ImagesContainer imgNum={imgNum} title={title} />
+      <ImagesContainer imgNum={imgNum} title={title} setLoading={setLoading} />
       <div ref={scrollContainerRef} style={{
         overflowY: "scroll",
         overflowX: 'hidden',
@@ -139,6 +145,7 @@ function Component(props: ComponentProps) {
         backgroundPosition: "140% 97%",
         backgroundSize: "110%",
         position: 'relative',
+        visibility: loading ? 'hidden' : 'visible',
       }}>
         <div style={{
           height: `${heightPercent}%`,
@@ -146,6 +153,7 @@ function Component(props: ComponentProps) {
           opacity: 0,
         }}>I</div>
       </div>
+      {loading && "Loading images, please wait..."}
     </div >
   )
 }
@@ -155,11 +163,20 @@ function getImagePath(title: Title, num: number) {
 }
 
 function App() {
-  return <div className='container'>
-    <Component
-      title='body'
-    />
-  </div>
+
+  const [loading, error, valid] = useValidate();
+
+  if (loading)
+    return "Loading...";
+
+  if (!valid)
+    return "Sorry, this page is only available for NTU student (140.112.X.X).";
+
+  return <Component title='body' />
 }
 
-export default App
+export default function () {
+  return <div className='container'>
+    <App />
+  </div>
+}
